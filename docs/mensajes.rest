@@ -1,0 +1,67 @@
+POST http://127.0.0.1:3000/api/enviar-mensaje
+Content-Type: application/json
+
+{
+    "numero": "59173277937",
+    "mensaje":{
+        "type": "text",
+        "body": "Hola Mundo desde mi API 2"
+    } 
+}
+
+### imagen
+POST http://127.0.0.1:3000/api/enviar-mensaje
+Content-Type: application/json
+
+{
+    "numero": "59173277937",
+    "mensaje":{
+        "type": "image",
+        "link": "https://blumbitvirtual.edtics.com/pluginfile.php/5663/course/overviewfiles/Post%20N8N%20%281%29.png",
+        "caption": "Hola este es una *imagen* de prueba enviado desde Node\n\n> Esta es una Cita"
+    } 
+}
+
+### Ubicación
+
+POST http://127.0.0.1:3000/api/enviar-mensaje
+Content-Type: application/json
+
+{
+    "numero": "59173277937",
+    "mensaje":{
+        "type": "location",
+        "latitude": "-16.5",
+        "longitude": "-68.1333",
+        "name": "Zona Central",
+        "address": "Av 123 Zona ABC. (Centro)"
+    } 
+}
+
+
+### Butons
+POST http://127.0.0.1:3000/api/enviar-mensaje
+Content-Type: application/json
+
+{
+    "numero": "59173277937",
+    "mensaje":{
+        "type": "buttons",
+        "body": "Qué tecnologia utilizas? \nElige una opción:",
+        "buttons": [
+            {
+                "type": "reply",
+                "reply": { "id": 1, "title": "Frontend" }
+            },
+            {
+                "type": "reply",
+                "reply": { "id": 2, "title": "Backend" }
+            }
+            ,
+            {
+                "type": "reply",
+                "reply": { "id": 3, "title": "Fullstack" }
+            }
+        ]
+    } 
+}
