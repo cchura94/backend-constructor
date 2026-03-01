@@ -8,3 +8,9 @@ npm install dotenv
 ```
 npm install axios
 ```
+### Paquetes para Bases de datos
+- Instalar Sequelize
+````
+npm install --save sequelize
+npm install --save pg pg-hstore
+```
