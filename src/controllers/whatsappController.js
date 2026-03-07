@@ -22,6 +22,14 @@ async function enviarMensaje(req, res){
     } 
 }
 
+const preguntas = [
+    "Hola, ¿Cuál es su Nombre?",
+    "¿Cual es tu correo?",
+    "¿Cual es tu número de identificación?",
+];
+
+const sesiones = {}
+
 async function recibirMensajeWebhook(req, res){
 
     // console.log(JSON.stringify(req.body, null, 2));
@@ -77,6 +85,50 @@ async function recibirMensajeWebhook(req, res){
         });
 
         if(!opcion){
+            
+            if(!sesiones[numero]){
+                sesiones[numero] = {
+                    paso: 0,
+                    respuestas: []
+                }
+                await whatsappService.enviarMensajeWhatsapp(numero, {
+                    type: "text",
+                    body: preguntas[0]
+                });
+
+                console.log(sesiones[numero])
+                return res.sendStatus(200);
+            }
+            const sesion = sesiones[numero];
+            sesion.respuestas.push(mensajeUsuario);
+            sesion.paso++;
+            if(sesion.paso >= preguntas.length){
+                const datos = {
+                    nombre: sesion.respuestas[0],
+                    correo: sesion.respuestas[1],
+                    identificacion: sesion.respuestas[2],
+                }
+                console.log(datos);
+                let mensajeRespuestaDatos = ` Los datos ingresados son: \n\n*Nombre*:${sesion.respuestas[0]}\n*Correo*:${sesion.respuestas[1]}\n*Nro. Identificación*:${sesion.respuestas[2]}` 
+                await whatsappService.enviarMensajeWhatsapp(numero, {
+                    type: "text",
+                    body: mensajeRespuestaDatos
+                });
+                await whatsappService.enviarMensajeWhatsapp(numero, {
+                    type: "text",
+                    body: "Gracias, registramos tus datos."
+                });
+                
+                //delete sesiones[numero];
+                return res.sendStatus(200);
+            }
+
+            await whatsappService.enviarMensajeWhatsapp(numero, {
+                type: "text",
+                body: preguntas[sesion.paso]
+            });
+
+            console.log(sesiones[numero])
             return res.sendStatus(200);
         }
 
@@ -103,6 +155,144 @@ async function recibirMensajeWebhook(req, res){
         console.log(error);
         return res.sendStatus(500);
     }    
+}
+
+async function recibirMensajeWebhookEvolution(req, res){
+    try {
+
+        const body = req.body;
+
+        if(body.event !== "messages.upsert"){
+            return res.sendStatus(200);
+        }
+
+        const data = body.data;
+
+        // ignorar mensajes enviados por el bot
+        if(data.key.fromMe){
+            return res.sendStatus(200);
+        }
+
+        // numero usuario
+        const numero = data.key.remoteJid.split("@")[0];
+
+        let mensajeUsuario = "";
+
+        // texto normal
+        if(data.message?.conversation){
+            mensajeUsuario = data.message.conversation;
+        }
+
+        // otros tipos posibles
+        if(data.message?.extendedTextMessage){
+            mensajeUsuario = data.message.extendedTextMessage.text;
+        }
+
+        if(!mensajeUsuario){
+            return res.sendStatus(200);
+        }
+
+        console.log("*** : RESPUESTA USUARIO:", mensajeUsuario);
+
+        // 1. Buscar o crear contexto
+        let [ context, created ] = await UserContext.findOrCreate({
+            where: { phone_number: numero },
+            defaults: { current_node: 'main' }
+        });
+
+        if(created){
+            await enviarMensajeDinamico(numero, 'main');
+            return res.sendStatus(200);
+        }
+
+        const nodeData = await ChatbotNode.findOne({
+            where: { node_key: context.current_node }
+        });
+
+        const opcion = await Option.findOne({
+            where: {
+                chatbotNodeId: nodeData.id,
+                key: mensajeUsuario
+            }
+        });
+
+        if(!opcion){
+
+            if(!sesiones[numero]){
+                sesiones[numero] = {
+                    paso: 0,
+                    respuestas: []
+                }
+
+                await whatsappService.enviarMensajeWhatsapp(numero,{
+                    type: "text",
+                    body: preguntas[0]
+                });
+
+                return res.sendStatus(200);
+            }
+
+            const sesion = sesiones[numero];
+
+            sesion.respuestas.push(mensajeUsuario);
+            sesion.paso++;
+
+            if(sesion.paso >= preguntas.length){
+
+                const datos = {
+                    nombre: sesion.respuestas[0],
+                    correo: sesion.respuestas[1],
+                    identificacion: sesion.respuestas[2],
+                }
+
+                console.log(datos);
+
+                let mensajeRespuestaDatos = `Los datos ingresados son:\n\n*Nombre*: ${datos.nombre}\n*Correo*: ${datos.correo}\n*Nro. Identificación*: ${datos.identificacion}`;
+
+                await whatsappService.enviarMensajeWhatsapp(numero,{
+                    type:"text",
+                    body:mensajeRespuestaDatos
+                });
+
+                await whatsappService.enviarMensajeWhatsapp(numero,{
+                    type:"text",
+                    body:"Gracias, registramos tus datos."
+                });
+
+                return res.sendStatus(200);
+            }
+
+            await whatsappService.enviarMensajeWhatsapp(numero,{
+                type:"text",
+                body: preguntas[sesion.paso]
+            });
+
+            return res.sendStatus(200);
+        }
+
+        if(opcion.respuesta){
+            await whatsappService.enviarMensajeWhatsapp(numero, opcion.respuesta);
+        }
+
+        if(opcion.next_node_id){
+
+            const nodeData2 = await ChatbotNode.findOne({
+                where:{ id: opcion.next_node_id }
+            });
+
+            await context.update({
+                current_node: nodeData2.node_key
+            });
+
+            await enviarMensajeDinamico(numero, nodeData2.node_key);
+        }
+
+        return res.sendStatus(200);
+
+    } catch (error) {
+        console.log(error);
+        return res.sendStatus(500);
+    }
 }
 
 async function enviarMensajeDinamico(numero, nodeId){
@@ -155,5 +345,6 @@ async function enviarMensajeDinamicoButtons(numero, nodeId){
 
 module.exports = {
     enviarMensaje,
-    recibirMensajeWebhook
+    recibirMensajeWebhook,
+    recibirMensajeWebhookEvolution
 }

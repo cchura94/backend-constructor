@@ -1,7 +1,7 @@
 const cloudProvider = require("./whatsappCloudProvider.js");
 const evolutionProvider = require("./whatsappEvolutionProvider");
 
-const provider = process.env.WHATSAPP_PROVIDER || 'cloud';
+const provider = process.env.WHATSAPP_PROVIDER || 'cloud'; // cambiar desde la BD
 
 function getWhatsappProvider(){
     switch (provider) {

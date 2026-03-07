@@ -1,0 +1,16 @@
+GET http://127.0.0.1:3000/api/chatbot/nodes?botId=1
+
+### bots
+GET http://127.0.0.1:3000/api/bots
+
+### Crear bot
+
+POST http://127.0.0.1:3000/api/bots
+Content-Type: application/json
+
+{
+    "name": "Segundo Bot",
+    "number": "73277937",
+    "plataforma": "evolution",
+    "status": "true"
+}
