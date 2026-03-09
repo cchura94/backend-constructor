@@ -1,10 +1,14 @@
 const express = require("express");
 require("dotenv").config(); // .env
+var cors = require('cors')
 const routes = require("./routes/index.js")
 const { sequelize } = require("./models")
 
 // Inicializar express
 const app = express();
+
+// cors
+app.use(cors())
 
 // declarar variables
 const PORT= process.env.PORT || 3000;
