@@ -1,7 +1,8 @@
 const axios = require("axios");
 const whatsappService = require("./../services/whatsappService")
 const { UserContext, ChatbotNode, Option } =  require("./../models");
-const { where } = require("sequelize");
+const Bot = require("../models/Bot");
+const aiService = require("./../services/aiService");
 
 async function enviarMensaje(req, res){
     try {
@@ -42,6 +43,13 @@ async function recibirMensajeWebhook(req, res){
             return res.status(200).send("No Mensaje");
         }
 
+        // 
+        const phoneId = value.metadata?.phone_number_id;
+
+        const botConfig = await Bot.findOne({where: {identifier: phoneId}});
+
+        if(!botConfig) return res.sendStatus(200);//.json({mensaje: "Bot no configurado"});
+
         const message = value.messages[0];
         const numero = message.from;
         
@@ -58,8 +66,8 @@ async function recibirMensajeWebhook(req, res){
 
         // 1. Buscar o crear el conext del usuario
         let [ context, created ] = await UserContext.findOrCreate({
-            where: {phone_number: numero},
-            defaults: {current_node: 'main'}
+            where: {phone_number: numero, botId: botConfig.id},
+            defaults: {current_node: 'main', botId: botConfig.id}
         });
 
         if(created) {
@@ -85,7 +93,25 @@ async function recibirMensajeWebhook(req, res){
         });
 
         if(!opcion){
+
+            // const botConfig = await Bot.findByPk(context.botId)
+            const promptActual = botConfig?.prompt || "Responde unicamente con la palabra 'NOSE'."
+
+            const {respuesta, nuevoHistorial} = await aiService.generarRespuestaIA(
+                mensajeUsuario,
+                context.ai_history || [],
+                promptActual
+            );
+
+            const historialLimitado = nuevoHistorial.slice(-10);
+            await context.update({ai_history: historialLimitado});
+
+            await whatsappService.enviarMensajeWhatsapp(numero, {
+                type: "text",
+                body: respuesta
+            })
             
+        /*
             if(!sesiones[numero]){
                 sesiones[numero] = {
                     paso: 0,
@@ -129,6 +155,8 @@ async function recibirMensajeWebhook(req, res){
             });
 
             console.log(sesiones[numero])
+
+            */
             return res.sendStatus(200);
         }
 

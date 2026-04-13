@@ -39,5 +39,7 @@ router.delete("/chatbot/options/:id", chatbotController.deleteOption);
 router.get("/bots", botController.getAll);
 router.post("/bots", botController.create);
 router.delete("/bots", botController.delete);
+router.get("/bots/:id", botController.getOne);
+router.put("/bots/:id", botController.update);
 
 module.exports = router;

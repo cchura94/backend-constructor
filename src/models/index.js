@@ -11,6 +11,8 @@ ChatbotNode.hasMany(Option, {as: 'opciones', foreignKey: 'chatbotNodeId'});
 // Una Opcion puede apuntar a otro Nodo
 Option.belongsTo(ChatbotNode, {as: 'nextNode', foreignKey: 'next_node_id'});
 
+Bot.hasMany(UserContext, { foreignKey: 'botId' });
+UserContext.belongsTo(Bot, {foreignKey: 'botId'});
 const db = {
     ChatbotNode,
     Option,

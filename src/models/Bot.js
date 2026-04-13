@@ -15,7 +15,7 @@ const Bot = sequelize.define(
     },
     number: { // ????????
         type: DataTypes.STRING(20),
-        allowNull: false
+        allowNull: true
     },
     plataforma: {
       type: DataTypes.ENUM('cloud', 'evolution'),
@@ -28,7 +28,19 @@ const Bot = sequelize.define(
     mensajes: {
         type: DataTypes.INTEGER,
         defaultValue: 0
+    },
+    identifier: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      comment: "Guarda el phone_number_id de Cloud o el nombre de instancia de Evolution"
+    },
+    prompt: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: "Eres un asistente responde en menos de 30 palabras"
     }
+
   },
   {
     timestamps: true
